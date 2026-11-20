@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-world="desert">
+<head>
+<meta charset="utf-8">
+<title>App icons (dev)</title>
+<link rel="stylesheet" href="../css/theme.css">
+<style>
+  html,body{overflow:auto;height:auto;position:static;background:#f4e3c1;user-select:text}
+  body{padding:14px;font-family:var(--display)}
+  figure{display:inline-block;margin:0 14px 14px 0;text-align:center;font-size:13px}
+  canvas{display:block;border:2px solid var(--ink);border-radius:14px;margin-bottom:4px}
+</style>
+</head>
+<body>
+<h1 style="font-size:18px;margin:0 0 10px">App icons, drawn by the game's own art. Click a name to save the file into assets/icons/.</h1>
+<div id="out"></div>
+<script type="module">
+// The five icons the manifest and the page ask for, exported from a canvas drawing like every other picture in the
+// family. Open this page from the dev server (tools/serve.py) and save each file into assets/icons/.
+import { mulberry } from '../js/sim/rng.js';
+import { founder } from '../js/sim/genome.js';
+import { appearance } from '../js/sim/phenotype.js';
+import { drawFalcon } from '../js/art/falcon.js';
+import { INK } from '../js/art.js';
+import { sky, dunes, SKIES } from '../js/art/desert.js';
+
+const look = appearance(founder(mulberry(7), { species: 'saker', sex: 'f', source: 'auction', colour: ['ashgar', 'ashgar'] }), 120);
+// size in pixels; safe = how much of the square the falcon may use (a maskable icon keeps to the middle 80 %)
+function icon(size, safe = 1, round = true) {
+  const cv = document.createElement('canvas'); cv.width = cv.height = size; const c = cv.getContext('2d'), k = size / 256, S = 256; c.scale(k, k); c.lineJoin = 'round'; c.lineCap = 'round';
+  if (round) { c.beginPath(); c.roundRect(0, 0, S, S, 52); c.clip(); }
+  const d = SKIES.dusk; sky(c, S, S, 'dusk', 0.86); dunes(c, 0, S, 196, 30, 96, d[5], d[6], S, 60); dunes(c, 0, S, 226, 16, 54, d[5], d[6], S, 10);
+  c.fillStyle = '#c8202b'; c.fillRect(0, S - 22, S, 22); c.fillStyle = INK; c.fillRect(0, S - 25, S, 4);                          // the family's red, like the shemagh
+  const s = 4.6 * safe; c.save(); c.translate(S / 2 - 6 * safe, S * 0.5 + 106 * safe); drawFalcon(c, 0, 0, look, { pose: 'block', s: s / look.scale, hood: true, hoodCol: '#c8202b', jesses: false }); c.restore();
+  if (round) { c.strokeStyle = INK; c.lineWidth = 7; c.beginPath(); c.roundRect(3.5, 3.5, S - 7, S - 7, 49); c.stroke(); }
+  return cv;
+}
+const list = [['icon-192.png', 192, 1, true], ['icon-512.png', 512, 1, true], ['icon-maskable-512.png', 512, 0.76, false], ['apple-touch-icon.png', 180, 0.92, false], ['favicon-32.png', 32, 1.12, true]];
+const out = document.getElementById('out'); window.__icons = {};
+for (const [name, size, safe, round] of list) {
+  const cv = icon(size, safe, round), fig = document.createElement('figure'), a = document.createElement('a');
+  cv.style.width = Math.min(size, 256) + 'px'; cv.style.height = Math.min(size, 256) + 'px';
+  a.textContent = `${name} (${size} px)`; a.download = name; a.href = cv.toDataURL('image/png'); window.__icons[name] = cv;
+  fig.appendChild(cv); fig.appendChild(a); out.appendChild(fig);
+}
+</script>
+</body>
+</html>

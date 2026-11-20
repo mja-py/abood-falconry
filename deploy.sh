@@ -5,6 +5,9 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 if [ -n "$(git status --porcelain)" ]; then echo "commit or stash your changes first"; exit 1; fi
+# nothing is published unless the rules, the strings, the fact sources and the offline file list all check out
+node --test test/ >/dev/null 2>&1 || { echo "tests failed: run npm test"; exit 1; }
+for t in check-imports check-i18n check-facts check-sw; do node "tools/$t.mjs" >/dev/null || { echo "$t failed: run npm run check"; exit 1; }; done
 V="$(git rev-parse --short=8 HEAD)"
 SITE="$(mktemp -d)"
 cp -r index.html sw.js manifest.webmanifest css js assets "$SITE/"

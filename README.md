@@ -18,7 +18,7 @@ friend codes on screen) is designed and not built yet; see "What is not here yet
 python3 tools/serve.py 8018
 ```
 
-Then open http://127.0.0.1:8018 . The dev server only adds "do not cache", so a reload always runs the code on disk.
+Then open http://127.0.0.1:8018 . The published game is at https://mja-py.github.io/abood-falconry/ . The dev server only adds "do not cache", so a reload always runs the code on disk.
 There is no build step. The service worker is off on localhost (add `?sw=1` to test it).
 
 ## Check it
@@ -38,7 +38,8 @@ npm run balance -- --assert
 - `npm run check`: the rules stay pure (`check-imports`), every string exists in both languages with no symbol glyphs
   (`check-i18n`), every fact has a source (`check-facts`), the offline file list is complete (`check-sw`).
 - `npm run balance`: plays hundreds of whole careers on the real rules and reports hours, dirhams and catch rates.
-- The family linter: `bash <skill>/scripts/check-theme.sh .` (0 failures; the warnings are the four app icons).
+- The family linter: `bash <skill>/scripts/check-theme.sh .` (0 failures).
+- `./deploy.sh` runs the tests and checks first and refuses to publish if any fail.
 
 In the browser console, `window.__game.debug` drives the game without playing: `start(place, { quarry })`,
 `step(dt, n)`, `bot(true, skill)`, `next()`, `weeks(n)`, `sheet(kind, params)`, `lang('en')`, `girl(true)`, `info()`,
@@ -91,10 +92,13 @@ or a heritage body before release.
 
 Selling falcons and the simulated market, rivals, the 400 m race and the beauty contest, peregrine / gyr / wakri and
 hybrids in play (the genetics and drawing already support them), more quarry and regions, training mini-games beyond
-the lure, friend codes on screen (the code format exists and is tested), live races, the four app icons, the Android
+the lure, friend codes on screen (the code format exists and is tested), live races, the Android
 wrapper, and the long-game balance targets (a lucky player needing at least 300 hours for 100%).
 Restore uses the browser's own prompt for pasting and for the grown-up sum; it needs a proper card.
 
+The app icons are exported from the game's own drawing: open `tools/icons.html` on the dev server and save each
+file into `assets/icons/`.
+
 ## Licence and credits
 
-Game code MIT. See CREDITS.md for the font (OFL 1.1), ZzFX (MIT) and PeerJS (MIT). All art is original, drawn in code.
+Game code MIT (see LICENSE). See CREDITS.md for the font (OFL 1.1), ZzFX (MIT) and PeerJS (MIT). All art is original, drawn in code.
