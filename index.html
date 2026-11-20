@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-world="desert">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>عبود الصقّار</title>
+<meta name="description" content="عبود يتعلّم القنص مع بابا: يدرّب صقره، يقنص، ويربّي أحسن السلالات. Abood learns falconry from Baba: train your falcon, hunt, and breed the finest bloodlines.">
+<meta name="theme-color" content="#1b1430">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="عبود">
+<meta property="og:title" content="عبود الصقّار Abood the Falconer">
+<meta property="og:description" content="Abood learns falconry from Baba: train your falcon, hunt, and breed the finest bloodlines.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="preload" href="assets/fonts/baloo-bhaijaan-2-arabic-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/baloo-bhaijaan-2-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="modulepreload" href="js/game.js?v=__BUILD__">
+<link rel="stylesheet" href="css/theme.css?v=__BUILD__">
+</head>
+<body>
+<canvas id="cv" data-i18n-aria="title" aria-label="عبود الصقّار"></canvas>
+
+<!-- ============ HUD (in play): stats top-left/right, pause as a round corner button ============ -->
+<div class="hud" id="hud" hidden>
+  <div class="stat" id="scoreBox"><span id="hScore" dir="ltr">0</span><small data-i18n="h_score">النقاط</small></div>
+  <div class="chips" id="chips"><span class="chip" id="flightChip"></span><!-- online:start --><span class="chip opp-chip" id="oppChip" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg><span id="oppChipName"></span><b id="oppChipVal" dir="ltr">0</b></span><!-- online:end --></div>
+  <div class="stat"><i class="coin" aria-hidden="true"></i><span id="hCoins" dir="ltr">0</span></div>
+  <button class="corner" id="pauseBtn" type="button" data-i18n-aria="a_pause" aria-label="إيقاف مؤقت"><svg class="si" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6v12M15 6v12"/></svg></button>
+</div>
+<p class="say tip" id="tip" role="status" aria-live="polite" hidden></p>
+<button class="bigbtn" id="actBtn" type="button" hidden><span class="bigbtn-core"><canvas id="actCv" width="96" height="96" aria-hidden="true"></canvas></span><b id="actLbl"></b></button>
+
+<!-- ============ main menu: the camp ============ -->
+<div class="overlay" id="menu" hidden>
+  <div class="panel menu">
+    <div class="panel-top">
+      <div class="pills"><div class="coinpill"><i class="coin" aria-hidden="true"></i><span class="coinVal" dir="ltr">0</span></div><span class="calpill" id="calPill"></span></div>
+      <div class="tools">
+        <button class="iconbtn" id="muteBtn" type="button" data-i18n-aria="a_sound" aria-label="الصوت" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4.2 4.2 0 0 1 0 6M18.2 6.5a8 8 0 0 1 0 11"/></svg></button>
+        <button class="iconbtn" id="fsBtn" type="button" data-i18n-aria="a_fullscreen" aria-label="ملء الشاشة" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+        <div class="lang" role="group" aria-label="Language / اللغة"></div>
+      </div>
+    </div>
+    <div class="menu-main">
+      <div class="avatar-box" id="avBox" role="button" tabindex="0" data-i18n-aria="fa_title">
+        <canvas id="avMenu" width="320" height="300" aria-hidden="true"></canvas>
+        <p class="say" id="menuSay"></p>
+      </div>
+      <div class="menu-text">
+        <p class="kicker" data-i18n="kicker"></p>
+        <h1 data-i18n="title">عبود الصقّار</h1>
+        <p class="story" data-i18n="story"></p>
+        <div class="strip-wrap">
+          <p class="label" data-i18n="m_places"></p>
+          <div class="pstrip" id="levelStrip" role="group" data-i18n-aria="m_places"></div>
+        </div>
+        <div class="launch-row" id="launchRow"></div>
+        <div class="start-row">
+          <button class="btn go" id="playBtn" type="button"><canvas id="playCv" width="108" height="68" aria-hidden="true"></canvas><span id="playLbl"></span></button>
+          <!-- online:start --><button class="btn alt" id="friendBtn" type="button" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="8" r="3.5"/><circle cx="17" cy="9" r="3"/><path d="M2 20a6 6 0 0 1 12 0M13.5 20a4.5 4.5 0 0 1 8.5-2"/></svg><span data-i18n="mp_btn"></span></button><!-- online:end -->
+        </div>
+        <div class="menu-grid">
+          <button class="tile" type="button" data-sheet="mews"><canvas class="tile-art" width="96" height="96" aria-hidden="true"></canvas><span data-i18n="t_mews"></span></button><button class="tile" type="button" data-sheet="breed"><canvas class="tile-art" width="96" height="96" aria-hidden="true"></canvas><span data-i18n="t_breed"></span><em class="dot" id="dotBreed" hidden></em></button><button class="tile" type="button" data-sheet="market"><canvas class="tile-art" width="96" height="96" aria-hidden="true"></canvas><span data-i18n="t_market"></span></button><button class="tile" type="button" data-sheet="compete"><canvas class="tile-art" width="96" height="96" aria-hidden="true"></canvas><span data-i18n="t_compete"></span></button><button class="tile" type="button" data-sheet="book"><canvas class="tile-art" width="96" height="96" aria-hidden="true"></canvas><span data-i18n="t_book"></span></button><button class="tile" type="button" data-sheet="missions"><canvas class="tile-art" width="96" height="96" aria-hidden="true"></canvas><span data-i18n="t_missions"></span><em class="dot" id="dotMissions" hidden></em></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ sheets (wardrobe / shop / missions / badges / help) ============ -->
+<div class="overlay" id="sheet" hidden>
+  <div class="panel sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+    <div class="sheet-top"><h2 id="sheetTitle"></h2><div class="sheet-nav" id="sheetNav" hidden></div><div class="coinpill"><i class="coin" aria-hidden="true"></i><span class="coinVal" dir="ltr">0</span></div><button class="ghost" id="sheetClose" type="button" data-i18n="b_close"></button></div>
+    <div class="sheet-body" id="sheetBody"></div>
+  </div>
+</div>
+
+<!-- ============ pause ============ -->
+<div class="overlay" id="pause" hidden>
+  <div class="panel pausecard" role="dialog" aria-modal="true" aria-labelledby="pauseTitle">
+    <h2 id="pauseTitle" data-i18n="pa_title"></h2>
+    <button class="btn" id="resumeBtn" type="button" data-i18n="b_resume"></button>
+    <div class="pause-row">
+      <button class="btn alt" id="restartBtn" type="button" data-i18n="b_replay"></button>
+      <button class="btn cream" id="quitBtn" type="button" data-i18n="b_menu"></button>
+    </div>
+    <p class="hint" data-i18n="pa_hint"></p>
+  </div>
+</div>
+
+<!-- ============ results ============ -->
+<div class="overlay" id="over" hidden>
+  <div class="panel over" id="overPanel">
+    <div class="panel-top"><p class="kicker" id="overQuote"></p><div class="pills"><div class="coinpill"><i class="coin" aria-hidden="true"></i><span class="coinVal" dir="ltr">0</span></div><div class="lang" role="group" aria-label="Language / اللغة"></div></div></div>
+    <div class="menu-main">
+      <div class="avatar-box"><canvas id="avOver" width="320" height="300" aria-hidden="true"></canvas></div>
+      <div class="menu-text">
+        <!-- online:start -->
+        <div class="race-box" id="raceBox" hidden>
+          <p class="race-head" id="raceHead"></p>
+          <div class="race-row"><span class="race-me"><b id="raceMe" dir="ltr">0</b><small id="raceMeName"></small></span><em data-i18n="mp_vs"></em><span class="race-opp"><b id="raceOpp" dir="ltr">0</b><small id="raceOppName"></small></span></div>
+        </div>
+        <!-- online:end -->
+        <h2 id="overTitle"></h2>
+        <p id="overMsg"></p>
+        <div class="score">
+          <div><b id="sScore" dir="ltr">0</b><span data-i18n="r_caught"></span></div>
+          <div class="nb"><b id="sBest" dir="ltr">0</b><span data-i18n="r_perfect"></span></div>
+          <div><b id="sPicked" dir="ltr">0</b><span data-i18n="r_points"></span></div>
+        </div>
+        <div class="swap">
+          <p class="label" data-i18n="r_swap"></p>
+          <div class="swap-row">
+            <div class="sw-box"><b id="swFrom" dir="ltr">0</b></div>
+            <svg class="sw-arrow si" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg>
+            <div class="sw-box gold"><i class="coin" aria-hidden="true"></i><b id="swCoins" dir="ltr">0</b></div>
+          </div>
+          <div class="swap-parts" id="swParts"></div>
+        </div>
+        <div class="badge-strip" id="overBadges"></div>
+        <p class="fact" id="overFact" hidden></p>
+        <div class="over-actions">
+          <button class="btn" id="againBtn" type="button" data-i18n="b_camp"></button>
+          <button class="btn cream" id="overMenuBtn" type="button" data-i18n="b_menu" hidden></button>
+        </div>
+        <p class="hint race-hint" id="raceHint"></p><!-- online -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ first-run language picker ============ -->
+<div class="overlay" id="langPick" hidden>
+  <div class="panel pick">
+    <p class="pick-title" data-i18n="pickTitle">اختر اللغة</p>
+    <div class="pick-row">
+      <button type="button" class="pick-btn" data-pick="ar"><span class="flag-big" id="flagAr"></span><b lang="ar">العربية</b></button>
+      <button type="button" class="pick-btn" data-pick="en"><span class="flag-big" id="flagEn"></span><b lang="en">English</b></button>
+    </div>
+    <p class="hint" data-i18n="pickHint"></p>
+  </div>
+</div>
+
+<!-- ============ rotate your phone (remove for a portrait game) ============ -->
+<div id="rotate" role="alertdialog" aria-modal="true" aria-labelledby="rotTxt" hidden>
+  <div class="rot-card">
+    <svg class="rot-phone si" viewBox="0 0 64 64" aria-hidden="true"><g class="rot-g"><rect x="20" y="6" width="24" height="44" rx="5"/><path d="M29 44h6"/></g><path class="rot-arrow" d="M52 30a20 20 0 0 1-12 22M40 46v6h6"/></svg>
+    <p id="rotTxt" data-i18n="rotate"></p>
+    <p class="rot-hint" data-i18n="rotate_hint"></p>
+  </div>
+</div>
+
+<!-- online:start -->
+<!-- ============ race a friend: lobby (grown-up gate → create / join → waiting → vs) ============ -->
+<div class="overlay" id="friend" hidden>
+  <div class="panel pick friend" role="dialog" aria-modal="true" aria-labelledby="fTitle">
+    <p class="kicker" data-i18n="mp_kicker"></p>
+    <h2 id="fTitle" data-i18n="mp_title"></h2>
+    <div class="f-vs" id="fVs" hidden><div><canvas id="avMe" width="192" height="192" aria-hidden="true"></canvas><b id="fMeName"></b></div><em data-i18n="mp_vs"></em><div><canvas id="avOpp" width="192" height="192" aria-hidden="true"></canvas><b id="fOppName"></b></div></div>
+    <p class="f-status" id="fStatus" role="status" aria-live="polite"></p>
+    <div class="f-gate" id="fGate" hidden>
+      <p class="f-gate-text" data-i18n="mp_gateText"></p>
+      <label class="f-field"><span id="fGateQ"></span><input id="fGateA" type="text" inputmode="numeric" maxlength="4" autocomplete="off" dir="ltr"></label>
+    </div>
+    <div class="f-choose" id="fChoose" hidden>
+      <div class="f-name-row"><span data-i18n="mp_name"></span><button class="name-tag" id="fNameBtn" type="button" data-i18n-aria="mp_editName" aria-label="غيّر الاسم"><b id="fNameTxt"></b><svg class="si" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"/></svg></button></div>
+    </div>
+    <p class="f-code" id="fCodeBig" dir="ltr" hidden></p>
+    <div class="f-load" id="fLoad" hidden><div class="ld-bar f-bar" aria-hidden="true"><i id="fLoadFill"></i></div><p class="f-load-hint" id="fLoadHint"></p></div>
+    <p class="hint" data-i18n="mp_rules"></p>
+    <div class="f-actions"><button class="btn" id="fGo" type="button" hidden></button><button class="btn alt" id="fJoin" type="button" data-i18n="mp_join" hidden></button><button class="ghost" id="fLeave" type="button" data-i18n="mp_leave"></button></div>
+  </div>
+</div>
+<!-- the pop card over the lobby: the race name, or the six code boxes -->
+<div class="overlay" id="fPop" hidden>
+  <div class="panel pick f-pop" role="dialog" aria-modal="true" aria-labelledby="fPopTitle">
+    <p class="pick-title" id="fPopTitle"></p>
+    <input class="f-pop-name" id="fPopName" type="text" maxlength="12" autocomplete="off" autocapitalize="words" spellcheck="false" enterkeyhint="done" data-i18n-aria="mp_name" aria-label="اسمك في السباق">
+    <div class="otp" id="fPopCode" dir="ltr" role="group" data-i18n-aria="mp_codePop" aria-label="رمز الغرفة"><input inputmode="numeric" autocomplete="one-time-code" aria-label="1"><input inputmode="numeric" aria-label="2"><input inputmode="numeric" aria-label="3"><span aria-hidden="true"></span><input inputmode="numeric" aria-label="4"><input inputmode="numeric" aria-label="5"><input inputmode="numeric" aria-label="6"></div>
+    <p class="f-pop-hint" id="fPopHint"></p>
+    <div class="f-actions"><button class="btn" id="fPopOk" type="button"></button><button class="ghost" id="fPopCancel" type="button" data-i18n="mp_cancel"></button></div>
+  </div>
+</div>
+<!-- online:end -->
+<div class="overlay" id="news" hidden>
+  <div class="panel pick news" role="dialog" aria-modal="true" aria-labelledby="newsTitle">
+    <p class="kicker" id="newsKick"></p>
+    <h2 id="newsTitle"></h2>
+    <canvas id="newsCv" width="400" height="220" aria-hidden="true"></canvas>
+    <p id="newsText"></p>
+    <div class="f-actions"><button class="btn" id="newsOk" type="button" data-i18n="b_ok"></button></div>
+  </div>
+</div>
+<div id="note" role="status" aria-live="polite" hidden></div>
+<div id="banner" role="alert" hidden><b></b><span dir="auto"></span></div>
+<div id="toast" hidden><span data-i18n="update"></span><button type="button" id="toastBtn" data-i18n="updateBtn"></button></div>
+
+<!-- ============ loader ============ -->
+<div id="loader" role="status" aria-live="polite">
+  <div class="ld-card">
+    <canvas id="ldCv" width="480" height="300" aria-hidden="true"></canvas>
+    <p class="ld-title" data-i18n="title">عبود الصقّار</p>
+    <div class="ld-bar"><i id="ldFill"></i></div>
+    <p class="ld-text"><span id="ldMsg">جاري التحميل…</span> <b id="ldPct" dir="ltr">0%</b></p>
+    <p class="ld-tip" id="ldTip"></p>
+  </div>
+</div>
+<noscript><p style="position:fixed;inset:auto 0 40%;text-align:center;color:#fffaf0;font-size:18px">هذي اللعبة تحتاج JavaScript. This game needs JavaScript.</p></noscript>
+
+<script type="module" src="js/game.js?v=__BUILD__"></script>
+</body>
+</html>

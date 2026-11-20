@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en" dir="ltr" data-world="desert">
+<head>
+<meta charset="utf-8">
+<title>Falcon gallery (dev)</title>
+<link rel="stylesheet" href="../css/theme.css">
+<style>
+  html,body{overflow:auto;height:auto;position:static;background:#f4e3c1;user-select:text}
+  body{padding:12px;font-family:var(--display)}
+  h1{font-size:18px;margin:4px 0 8px}
+  canvas{display:block;border:2px solid var(--ink);border-radius:10px;background:#fbf3df;margin-bottom:10px}
+  p{margin:4px 0;font-size:13px}
+</style>
+</head>
+<body>
+<h1>Falcon gallery: every bird below is drawn from its own genome</h1>
+<p id="info"></p>
+<canvas id="g" width="1840" height="1500" style="width:920px;height:750px"></canvas>
+<script type="module">
+import { mulberry } from '../js/sim/rng.js';
+import { founder, cross, typeOf } from '../js/sim/genome.js';
+import { appearance, appKey, colourOf } from '../js/sim/phenotype.js';
+import { drawFalcon, drawBlock, drawChick, drawEgg } from '../js/art/falcon.js';
+import { person, ABOOD, MOZAH } from '../js/art.js';
+
+const q = new URLSearchParams(location.search), seed = +(q.get('seed') || 1), t0 = performance.now();
+const rng = mulberry(seed), c = document.getElementById('g').getContext('2d'); c.scale(2, 2);
+const birds = [], keys = new Set();
+const mk = (species, o = {}) => founder(rng, { species, source: 'good', rareFreq: { thalj: 0.3 }, ...o });
+for (let i = 0; i < 20; i++) birds.push(mk('saker'));
+for (let i = 0; i < 10; i++) birds.push(mk('peregrine'));
+for (let i = 0; i < 10; i++) birds.push(mk('gyr'));
+for (let i = 0; i < 8; i++) birds.push(mk('wakri'));
+for (let i = 0; i < 12; i++) birds.push(cross(mk('gyr', { sex: 'm' }), mk(i % 2 ? 'saker' : 'peregrine', { sex: 'f' }), rng));
+const label = (txt, x, y) => { c.font = '700 9px "Baloo Bhaijaan 2"'; c.fillStyle = '#2a1a10'; c.textAlign = 'center'; c.fillText(txt, x, y); };
+// row block 1: every bird on its block
+birds.forEach((g, i) => {
+  const a = appearance(g, 60 + i * 9), x = 34 + (i % 20) * 45, y = 78 + Math.floor(i / 20) * 96; keys.add(appKey(a));
+  drawBlock(c, x, y, 0.8); drawFalcon(c, x, y, a, { pose: 'block', s: 1, hood: i % 5 === 4, jesses: true });
+  label(`${typeOf(g).replace('_', '×')} ${g.sex}`, x, y + 44); label(colourOf(g), x, y + 53);
+});
+// flight: one beat in eight phases, then glides and stoops for different birds
+const by = 370;
+for (let i = 0; i < 8; i++) drawFalcon(c, 70 + i * 108, by, appearance(birds[0], 120), { pose: 'fly', s: 1.5, ph: i * Math.PI / 4 });
+for (let i = 0; i < 9; i++) { const g = birds[3 + i * 6]; drawFalcon(c, 60 + i * 98, by + 90, appearance(g, 120), { pose: 'fly', s: 1.3, glide: i % 2 === 0, ph: i }); }
+for (let i = 0; i < 9; i++) { const g = birds[1 + i * 6]; drawFalcon(c, 50 + i * 98, by + 160, appearance(g, 120), { pose: 'stoop', s: 1.3, strike: i % 2 === 1 }); }
+// juveniles, condition, eggs, chicks, and the falconer with the bird on the cuff
+for (let i = 0; i < 6; i++) { const g = birds[i * 3]; drawFalcon(c, 40 + i * 60, 690, appearance(g, 20, { feathers: 1 - i * 0.2, moult: i === 5, weight: i === 2 ? 0.9 : 1 }), { pose: 'block', s: 1.2 }); }
+label('juveniles (blue-grey cere), wear, moult, thin', 190, 720);
+for (let i = 0; i < 5; i++) drawEgg(c, 420 + i * 30, 690, 1.2, 100 + i, i === 4);
+for (let i = 0; i < 3; i++) drawChick(c, 600 + i * 40, 700, 1.2 + i * 0.3, i);
+const hold = (who, x, g) => { const o = Object.assign(who(), { s: 2.2, still: 1, arm: 'fist', mouth: 'smile' }); person(c, x, 725, 0, false, o); drawFalcon(c, x + 17 * 2.2, 725 - 41.5 * 2.2, appearance(g, 120), { pose: 'cuff', s: 0.95, hood: true, jesses: true }); };
+hold(ABOOD, 770, birds[0]); hold(MOZAH, 860, birds[22]);
+document.getElementById('info').textContent = `${birds.length} birds, ${keys.size} distinct appearance keys, drawn in ${(performance.now() - t0).toFixed(1)} ms (seed ${seed})`;
+window.__gallery = { birds: birds.length, distinct: keys.size, ms: performance.now() - t0 };
+</script>
+</body>
+</html>

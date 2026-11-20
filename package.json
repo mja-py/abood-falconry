@@ -1,0 +1,10 @@
+{
+  "name": "abood-falconry",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/",
+    "balance": "node tools/balance.mjs",
+    "check": "node tools/check-imports.mjs && node tools/check-i18n.mjs && node tools/check-facts.mjs && node tools/check-sw.mjs"
+  }
+}
