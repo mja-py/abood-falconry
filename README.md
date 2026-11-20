@@ -82,11 +82,12 @@ real tests.
 
 ## Facts
 
-39 fact cards and 18 majlis questions. 29 are marked verified (the source page was read); 10 are marked sourced (a
-source is recorded, but the exact figure came from a search summary and needs a second read). Five more are held
-back in the ledger until a better source is found. `node tools/check-facts.mjs --release` refuses to pass until
-every shipped fact is verified. Arabic falconry terms beyond the ones in the Book should be reviewed by a falconer
-or a heritage body before release.
+39 fact cards and 18 majlis questions, every one marked verified: its source page was read and says what the card
+says. A second read of ten of them on 20 November 2026 corrected three figures (the release programme's total, the
+race time, and the school's location) and softened two cards whose sources were unclear. Five more facts are held
+back in the ledger until a better source is found. `node tools/check-facts.mjs --release` passes only while every
+shipped fact is verified. Arabic falconry terms beyond the ones in the Book should be reviewed by a falconer or a
+heritage body before more are added.
 
 ## What is not here yet
 
