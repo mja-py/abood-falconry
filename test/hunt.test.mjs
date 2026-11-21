@@ -2,42 +2,50 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { create, step, fingerprint, summary } from '../js/sim/hunt-sim.js';
 import { makeBot, makeMasher } from '../js/sim/hunt-bot.js';
-import { founder } from '../js/sim/genome.js';
-import { effective } from '../js/sim/phenotype.js';
-import { mulberry } from '../js/sim/rng.js';
+import { QUARRY } from '../js/data/quarry.js';
+import { H, zoneRadius, plantAt, nearestShrub } from '../js/sim/world.js';
 
-const flat = v => ({ speed: v, burst: v, stoop: v, stamina: v, agility: v, accuracy: v, eyes: v, temper: v, hardy: v, size: v, flags: { window: 1 } });
-function fly(o, pilot, cap = 60 * 60 * 6) { const w = create(o); let n = 0; while (!w.done && n++ < cap) step(w, pilot(w)); return w; }
-const rate = (quarry, stats, skill, n = 120, tier) => { let c = 0, f = 0, t = 0; for (let i = 1; i <= n; i++) { const w = fly({ seed: i * 31, quarry, stats, tier }, makeBot(skill, i)); c += w.caught; f += w.flights; t += w.t; assert.ok(w.done, 'outing finishes'); } return { rate: c / f, secs: t / n }; };
+const flat = v => ({ speed: v, stamina: v, stoop: v, agility: v, eyes: v, flags: {} });
+function play(o, pilot, cap = 60 * 60 * 7) { const w = create(o); let n = 0; while (!w.done && n++ < cap) step(w, pilot(w)); return w; }
+const many = (stat, skill, level = 1, n = 40) => { let c = 0, t = 0, sc = 0, open = 0; for (let i = 1; i <= n; i++) { const w = play({ seed: i * 31 + 7, stats: flat(stat), level }, makeBot(skill, i)); if (!w.done) open++; c += w.caught; t += w.t; sc += w.score; } return { caught: c / n, secs: t / n, score: sc / n, open }; };
+
+test('the desert is the same everywhere: height, plants and zones are pure functions', () => {
+  assert.equal(H(1234, -567), H(1234, -567)); assert.ok(Math.abs(H(0, 0) - 5) < 1.5, 'level ground at the camp');
+  assert.deepEqual(plantAt(5, -3), plantAt(5, -3)); assert.equal(plantAt(0, 0), null, 'the camp is clear');
+  let shrubs = 0; for (let j = -20; j < 20; j++) for (let i = -20; i < 20; i++) { const p = plantAt(i, j); if (p && p.kind === 'shrub') shrubs++; } assert.ok(shrubs > 200 && shrubs < 700, `${shrubs} grass clumps`);
+  const near = nearestShrub(900, 900, 600); assert.ok(near && Math.hypot(near.x - 900, near.y - 900) <= 600);
+  assert.ok(zoneRadius(1) < zoneRadius(3) && zoneRadius(3) < zoneRadius(6));
+});
 
 test('hunt: same seed and same hands give the same outing', () => {
-  const run = () => { const w = create({ seed: 99, quarry: 'hare', stats: flat(50) }), p = makeBot(0.7, 5), marks = []; for (let i = 0; i < 4000 && !w.done; i++) { step(w, p(w)); if (i % 500 === 0) marks.push(fingerprint(w)); } return marks.join('/') + JSON.stringify(summary(w)); };
+  const run = () => { const w = create({ seed: 99, stats: flat(50), level: 3 }), p = makeBot(0.7, 5), marks = []; for (let i = 0; i < 9000 && !w.done; i++) { step(w, p(w)); if (i % 1000 === 0) marks.push(fingerprint(w)); } return marks.join('/') + JSON.stringify(summary(w)); };
   assert.equal(run(), run());
 });
 
-test('hunt: the easiest tier cannot fail, even for a child pressing at random', () => {
-  for (let i = 1; i <= 500; i++) {
-    const w = fly({ seed: i, quarry: 'lure', stats: flat(20 + (i % 5) * 10) }, makeMasher(i));
-    assert.ok(w.done, `seed ${i} finishes`); assert.equal(w.caught, w.flights, `seed ${i}: every lure flight ends in a catch`);
-    assert.ok(w.t < 60 * 5, `seed ${i} ends inside five minutes (took ${w.t.toFixed(0)} s)`);
+test('hunt: Baba\'s first lesson always ends in a catch, even for the clumsiest hands, and costs no energy until then', () => {
+  for (let i = 1; i <= 200; i++) {
+    const w = create({ seed: i, stats: flat(20 + (i % 4) * 8), level: 1, lesson: true }), p = makeBot(0, i); let n = 0;
+    while (w.caught < 1 && n++ < 60 * 150) { step(w, p(w)); if (w.caught < 1) assert.equal(w.energy, 1, 'the lesson costs no energy before the first catch'); }
+    assert.ok(w.caught >= 1, `seed ${i}: the lesson hare is caught (after ${(n / 60).toFixed(0)} s)`);
   }
-  for (let i = 1; i <= 60; i++) { const w = fly({ seed: i, quarry: 'lure', stats: flat(30) }, () => ({})); assert.equal(w.caught, w.flights, 'doing nothing at all still ends in a catch'); }
+  const idle = create({ seed: 3, stats: flat(30), level: 1, lesson: true }); for (let i = 0; i < 60 * 120; i++) step(idle, {}); assert.equal(idle.done, false, 'doing nothing never ends or fails the lesson'); assert.equal(idle.energy, 1);
+  const mash = create({ seed: 4, stats: flat(30), level: 1, lesson: true }), m = makeMasher(4); for (let i = 0; i < 60 * 60; i++) step(mash, m(mash)); assert.ok(Number.isFinite(mash.truck.x) && Math.hypot(mash.truck.x, mash.truck.y) <= mash.lim + 1, 'random driving stays inside the hunting ground');
 });
 
-test('hunt: a better falcon and a better hand both catch more', () => {
-  const weak = rate('hare', flat(30), 0.5), strong = rate('hare', flat(75), 0.5);
-  assert.ok(strong.rate > weak.rate + 0.05, `strong ${strong.rate.toFixed(2)} vs weak ${weak.rate.toFixed(2)}`);
-  const clumsy = rate('sandgrouse', flat(64), 0.15), deft = rate('sandgrouse', flat(64), 0.95);
-  assert.ok(deft.rate > clumsy.rate + 0.1, `deft ${deft.rate.toFixed(2)} vs clumsy ${clumsy.rate.toFixed(2)}`);
+test('hunt: a better falcon and a better hand both bring home more', () => {
+  const weak = many(35, 0.5), strong = many(75, 0.5); assert.ok(strong.caught > weak.caught + 1, `strong ${strong.caught.toFixed(1)} vs weak ${weak.caught.toFixed(1)}`);
+  const clumsy = many(50, 0.15), deft = many(50, 0.9); assert.ok(deft.caught > clumsy.caught, `deft ${deft.caught.toFixed(1)} vs clumsy ${clumsy.caught.toFixed(1)}`);
+  assert.ok(weak.caught >= 0.6, `a starter falcon still brings something home: ${weak.caught.toFixed(1)}`);
 });
 
-test('hunt: the quarry ladder is a ladder', () => {
-  const g = founder(mulberry(4), { species: 'saker', sex: 'f', source: 'starter' }), tr = v => ({ speed: v, burst: v, stoop: v, stamina: v, agility: v, accuracy: v });
-  const young = effective(g, 0, { tr: tr(0.3) }), trained = effective(g, 0, { tr: tr(0.9) });
-  const lure = rate('lure', young, 0.5, 60), hare = rate('hare', young, 0.5), grouse = rate('sandgrouse', young, 0.5), later = rate('sandgrouse', trained, 0.5);
-  assert.equal(lure.rate, 1);
-  assert.ok(hare.rate > 0.4 && hare.rate < 0.98, `a new falconer catches a good share of hares, not all: ${hare.rate.toFixed(2)}`);
-  assert.ok(hare.rate > grouse.rate + 0.2, `hare ${hare.rate.toFixed(2)} is easier than sandgrouse ${grouse.rate.toFixed(2)}`);
-  assert.ok(later.rate > grouse.rate + 0.2, `training opens the sandgrouse: ${grouse.rate.toFixed(2)} → ${later.rate.toFixed(2)}`);
-  for (const r of [lure, hare, grouse]) assert.ok(r.secs > 40 && r.secs < 300, `an outing takes ${r.secs.toFixed(0)} s`);
+test('hunt: an outing is short, the bag has a limit, and the houbara has its quota', () => {
+  for (const [stat, level] of [[35, 1], [60, 1], [80, 3], [95, 6]]) {
+    for (let i = 1; i <= 25; i++) {
+      const w = play({ seed: i * 53 + level, stats: flat(stat), level }, makeBot(0.7, i));
+      assert.ok(w.done, `stat ${stat} level ${level} seed ${i}: the outing ends (ran ${w.t.toFixed(0)} s)`); assert.ok(w.t < 60 * 6.5, `the outing takes ${w.t.toFixed(0)} s`);
+      assert.ok(w.caught <= w.bagMax); assert.ok((w.bag.houbara || 0) <= QUARRY.houbara.quota); assert.ok(w.energy >= 0 && w.energy <= 1);
+      assert.equal(w.score, Object.keys(w.bag).reduce((a, k) => a + w.bag[k] * QUARRY[k].value, 0)); assert.equal(w.meat, Object.keys(w.bag).reduce((a, k) => a + w.bag[k] * QUARRY[k].meat, 0));
+      if (level < 3) assert.equal(w.bag.houbara || 0, 0, 'no houbara before level 3');
+    }
+  }
 });

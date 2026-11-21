@@ -138,3 +138,23 @@ export function drawEgg(c, x, y, s = 1, seed = 1, dull = false) {
   c.fillStyle = 'rgba(255,255,255,.35)'; c.beginPath(); c.ellipse(-3, -5, 2, 4, -0.4, 0, TAU); c.fill();
   c.restore(); shape(); c.stroke(); c.restore();
 }
+
+// The falcon seen from above, for the open desert: nose along +x at angle 0. flap is the wing-beat phase; dash folds
+// the wings for a swoop. Drawn from the same appearance as the side views, so each bird is still itself in the air.
+export function drawFalconTop(c, x, y, a, o = {}) {
+  const s = (o.s || 1) * (0.86 + (a.scale - 1) * 0.6), b = a.build, dash = !!o.dash, beat = dash ? 0 : Math.cos(o.flap || 0);
+  const span = dash ? 13 : 33 * b.wing * (0.72 + 0.28 * Math.abs(beat)), sweep = dash ? 20 : 7 - beat * 4, tail = 17 * b.tail;
+  c.save(); c.translate(x, y); c.rotate(o.ang || 0); c.scale(s, s); c.lineJoin = 'round'; c.lineCap = 'round'; ink(c, 1.4);
+  c.fillStyle = a.back; c.beginPath(); c.moveTo(-9, -4); c.lineTo(-9 - tail, -7); c.quadraticCurveTo(-13 - tail, 0, -9 - tail, 7); c.lineTo(-9, 4); c.closePath(); fs(c);       // tail
+  if (a.pattern.includes('barred')) { c.strokeStyle = a.mark; c.lineWidth = 1.2; for (let i = 1; i <= 2; i++) { const tx = -9 - tail * i / 3; c.beginPath(); c.moveTo(tx, -5); c.lineTo(tx, 5); c.stroke(); } ink(c, 1.4); }
+  for (const sd of [-1, 1]) { // wings: pointed, swept back
+    c.fillStyle = a.back; c.beginPath(); c.moveTo(7, sd * 3); c.quadraticCurveTo(6, sd * span * 0.55, -sweep, sd * span); c.quadraticCurveTo(-sweep - 3, sd * span * 0.5, -8, sd * 3.5); c.closePath(); fs(c);
+    c.fillStyle = a.mark; c.beginPath(); c.moveTo(-sweep * 0.55 + 1, sd * span * 0.72); c.lineTo(-sweep, sd * span); c.quadraticCurveTo(-sweep - 2.4, sd * span * 0.72, -sweep * 0.72 - 4, sd * span * 0.56); c.closePath(); c.fill();   // dark wing tip
+  }
+  ink(c, 1.4); c.fillStyle = a.back; c.beginPath(); c.ellipse(0, 0, 12 * b.chest, 5.6 * b.chest, 0, 0, TAU); fs(c);                                                              // body
+  c.fillStyle = a.breast; c.globalAlpha = 0.55; c.beginPath(); c.ellipse(-2, 0, 6, 2.6, 0, 0, TAU); c.fill(); c.globalAlpha = 1;
+  const hr = 4.9 * b.head; c.fillStyle = b.cap > 0.5 ? a.mark : a.back; c.beginPath(); c.arc(12, 0, hr, 0, TAU); fs(c);                                                         // head
+  c.fillStyle = a.breast; c.beginPath(); c.arc(13.4, 0, hr * 0.55, -1.2, 1.2); c.fill();
+  c.fillStyle = a.juvenile ? JUVENILE : YELLOW; c.beginPath(); c.moveTo(12 + hr * 0.8, -1.5); c.lineTo(12 + hr + 3.6, 0); c.lineTo(12 + hr * 0.8, 1.5); c.closePath(); fs(c);    // beak
+  c.restore();
+}

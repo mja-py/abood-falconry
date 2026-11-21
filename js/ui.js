@@ -29,7 +29,7 @@ export function hideLoader() { const l = $('loader'); l.classList.add('done'); s
 const OVERLAYS = ['menu', 'sheet', 'pause', 'over', 'langPick', 'friend', 'fPop', 'news'].filter(id => document.getElementById(id)); // friend / fPop exist only with the online module
 export function show(id) { OVERLAYS.forEach(o => { $(o).hidden = o !== id; }); refreshCoins(); fitSoon(); }
 export function hideMenus() { OVERLAYS.forEach(o => { $(o).hidden = true; }); }
-export function showHud(on) { $('hud').hidden = !on; if (!on) { $('actBtn').hidden = true; $('tip').hidden = true; } }
+export function showHud(on) { $('hud').hidden = !on; $('radar').hidden = !on; if (!on) { $('actBtn').hidden = true; $('tip').hidden = true; } }
 export const shown = id => !$(id).hidden;
 
 // ---- pages: nothing scrolls ----
@@ -152,10 +152,10 @@ function nextNews() {
 }
 
 // ---- results: this outing's three numbers, the exchange counting up, a line from Baba, a fact ----
-export function showResult(r) { // r: { win, title, quote, caught, flights, perfect, points, coins, mult, lines: [html], badges: [{ name }], fact, av(canvas) }
+export function showResult(r) { // r: { win, title, quote, caught, meat, points, coins, mult, lines: [html], badges: [{ name }], fact, av(canvas) }
   const o = $('over'); o.classList.toggle('lose', !r.win); o.classList.toggle('win', !!r.win);
   $('overTitle').textContent = r.title; $('overQuote').textContent = r.quote || ''; $('overMsg').innerHTML = (r.lines || []).length ? r.lines[0] + ' ' + r.lines.slice(1).join(' · ') : '';
-  $('sScore').textContent = nf(r.caught) + ' / ' + nf(r.flights); $('sBest').textContent = nf(r.perfect); $('sPicked').textContent = nf(r.points);
+  $('sScore').textContent = nf(r.caught); $('sBest').textContent = '+' + nf(r.meat); $('sPicked').textContent = nf(r.points);
   $('swFrom').textContent = nf(r.points); $('swCoins').textContent = '0';
   $('swParts').innerHTML = `<span>${T('r_part_score', r.points)}</span><span class="hot">${T('r_part_mult', r.mult.toFixed(1))}</span>`;
   $('overBadges').innerHTML = (r.badges || []).map(b => `<span class="badge-chip">${b.name}</span>`).join('');

@@ -1,167 +1,148 @@
-// The falconer's year as rules: the calendar, caring for a bird, what an outing teaches it, Baba's first clutch,
-// the shop and the difficulty director. Every function takes the save, changes it, and returns events as plain data
-// (ids and numbers, never text), so the browser and the balance tool run the very same career.
-// Time moves only when the player plays: one finished outing is one week.
-import { unpack } from './genome.js';
-import { effective, potential } from './phenotype.js';
-import { stream, clamp } from './rng.js';
-import { layClutch, FERTILITY } from './breed.js';
+// The falconer's life as rules, kept to one loop a child can hold in mind:
+//   HUNT in the open desert → FEED the falcons with what was caught → ENHANCE a falcon with the dirhams earned →
+//   BREED two falcons for better chicks → SELL the ones not kept → hunt again.
+// Time is counted in hunts: eggs hatch after two, a chick flies after three and can breed after six.
+// Every function takes the save, changes it, and returns plain data, so the browser and the balance tool share it.
+import { unpack, pack, founder, shows, copies, typeOf } from './genome.js';
+import { potential, stars, colourOf } from './phenotype.js';
+import { stream, clamp, int } from './rng.js';
+import { layClutch } from './breed.js';
 import { coi } from './pedigree.js';
-import { addBird } from './state.js';
-import { pack } from './genome.js';
-import { TRAINABLE, ADULT_WEEKS } from '../data/loci.js';
-import { QUARRY } from '../data/quarry.js';
+import { addBird, STATS } from './state.js';
+import { RARE } from '../data/loci.js';
 import { FACTS } from '../data/facts.js';
 
-// ---- the calendar: 48 play-weeks, starting when the hunting season opens (20 October) ----
-export const WEEKS = 48;
-export const SEASONS = [['hunt', 0, 16], ['fest', 16, 24], ['breed', 24, 36], ['moult', 36, 48]];
-export const weekOfYear = week => ((week % WEEKS) + WEEKS) % WEEKS;
-export const yearOf = week => Math.floor(week / WEEKS);
-export const seasonOf = week => { const w = weekOfYear(week); return w < 16 ? 'hunt' : w < 24 ? 'fest' : w < 36 ? 'breed' : 'moult'; };
-export const seasonLeft = week => { const w = weekOfYear(week); return SEASONS.find(s => w < s[2])[2] - w; };
-
-// ---- birds ----
+export { STATS };
+// ---- falcons ----
 const cache = new Map();
-export function genomeOf(b) { let g = cache.get(b.g); if (!g) { g = unpack(b.g); if (cache.size > 400) cache.clear(); cache.set(b.g, g); } return g; }
+export function genomeOf(b) { let g = cache.get(b.g); if (!g) { g = unpack(b.g); if (cache.size > 600) cache.clear(); cache.set(b.g, g); } return g; }
 export const bird = (s, id) => s.birds.find(b => b.id === id);
 export const active = s => bird(s, s.active);
 export const mine = s => s.birds.filter(b => b.own === 'me');
-export const age = (s, b) => s.week - b.born;
-export const stageOf = (s, b) => (age(s, b) < 48 ? 'farkh' : 'jirnas');        // first-year bird, or one that has moulted
-export const isAdult = (s, b) => age(s, b) >= ADULT_WEEKS;
-// condition: at flying weight, healthy and with whole feathers a bird gives everything it has
-export const cond = b => clamp(1 - Math.min(0.09, Math.abs(b.w - 1) * 1.1) - (1 - b.hp) * 0.04 - (1 - b.fe) * 0.04, 0.85, 1);
-export const statsOf = (s, b) => effective(genomeOf(b), b.F, { tr: b.tr, cond: cond(b) });
-export const potentialOf = b => potential(genomeOf(b), b.F);
+export const age = (s, b) => s.hunts - b.born;
+export const FLY_AGE = 3, BREED_AGE = 6;
+export const stageOf = (s, b) => (age(s, b) < FLY_AGE ? 'chick' : age(s, b) < 12 ? 'farkh' : 'jirnas');
+export const canFly = (s, b) => !!b && age(s, b) >= FLY_AGE;
+export const isAdult = (s, b) => age(s, b) >= BREED_AGE;
 export const pedMap = s => new Map(s.ped.map(r => [r[0], { s: r[1], d: r[2], F: r[3] }]));
-// may this bird fly today? null when it may, otherwise the reason
-export function grounded(s, b) { return !b ? 'none' : b.moult ? 'moult' : b.hp < 0.45 ? 'sick' : b.w < 0.86 ? 'thin' : null; }
-
-export const LESSON_DONE = 1;
-export const RATION = [{ food: 0.7, aim: 0.94 }, { food: 1, aim: 1 }, { food: 1.3, aim: 1.07 }];   // light, normal, full
-export const LICENCE_FEE = 127;                                                 // the real seasonal fee in Abu Dhabi, in dirhams
-
-// one week passes
-export function weekTick(s) {
-  const ev = [], before = seasonOf(s.week); s.week++; s.stats.weeks++;
-  const now = seasonOf(s.week);
-  for (const b of mine(s)) {
-    const r = RATION[b.ration] || RATION[1];
-    if (s.food >= r.food) { s.food = Math.round((s.food - r.food) * 10) / 10; b.w += (r.aim - b.w) * 0.5; }
-    else { b.w -= 0.04; ev.push({ type: 'hungry', id: b.id }); }
-    b.w = clamp(b.w, 0.78, 1.15);
-    b.hp = clamp(b.hp + (b.w < 0.9 ? -0.08 : s.gear.perch ? 0.05 : 0.03), 0, 1);
-    if (b.moult) b.fe = clamp(b.fe + 0.1, 0, 1);
-  }
-  if (now !== before) {
-    ev.push({ type: 'season', season: now, year: yearOf(s.week) });
-    if (now === 'moult') for (const b of mine(s)) if (age(s, b) >= 40) { b.moult = 1; for (const t of TRAINABLE) b.tr[t] = Math.max(0.2, b.tr[t] * 0.85); }
-    if (now === 'hunt') for (const b of mine(s)) { b.moult = 0; b.fe = 1; }
-  }
-  const c = s.clutch;
-  if (c && c.stage === 'eggs' && s.week >= c.hatch) { c.eggs = c.eggs.filter(e => e.fertile); c.stage = 'chicks'; ev.push({ type: 'hatch', n: c.eggs.length }); if (!c.eggs.length) s.clutch = null; }
-  else if (c && c.stage === 'chicks' && s.week >= c.fledge) { c.stage = 'fledged'; ev.push({ type: 'fledge', n: c.eggs.length, baba: !!c.baba }); if (!c.baba) keepChicks(s, c.eggs.map((e, i) => i)); }
-  return ev;
+export const nesting = (s, id) => s.nests.some(n => n.dam === id);
+// what the genes allow, as five numbers 1–100, and as the stars a child reads (which are also the limit of training)
+export function potentialOf(b) { const p = potential(genomeOf(b), b.F); return { speed: p.speed, stamina: p.stamina, stoop: Math.round((p.stoop + p.burst + p.accuracy) / 3), agility: clamp(Math.round(p.agility - 0.3 * Math.max(0, p.size - 50)), 1, 100), eyes: p.eyes }; }
+export function starsOf(b) { const p = potentialOf(b), out = {}; for (const k of STATS) out[k] = stars(p[k]); return out; }
+export const starSum = b => { const st = starsOf(b); return STATS.reduce((a, k) => a + st[k], 0); };
+export const HUNGRY = 0.3;
+// what the falcon can do in today's hunt: genes × training, less when it is hungry; rare genes that show add their gift
+export function statsOf(s, b) {
+  const p = potentialOf(b), g = genomeOf(b), out = {}, hungry = b.fed < HUNGRY ? 0.8 : 1;
+  for (const k of STATS) out[k] = p[k] * (0.62 + 0.076 * b.lv[k]) * hungry;
+  out.flags = { speed: 1 + 0.12 * shows(g, 'barq'), quick: shows(g, 'sahm') === 1, grab: 1 + 0.25 * shows(g, 'ain'), dive: 0.3 * shows(g, 'shihab'), grip: shows(g, 'mikhlab') === 1, wind: shows(g, 'nafas') === 1 ? 0.75 : 1 };
+  return out;
 }
+export const rareOf = b => { const g = genomeOf(b); return RARE.map((r, i) => ({ id: r.id, copies: copies(g, i), shows: shows(g, i) })).filter(r => r.copies > 0); };
 
-// ---- outings ----
-const GAIN = { train: 0.06, hunt: 0.045 };
+// ---- the falconer's level: what a season of catches opens ----
+export const levelOf = xp => Math.floor((Math.sqrt(1 + 8 * xp / 300) - 1) / 2) + 1;       // 300, 900, 1800, 3000 …
+export const xpFor = level => 150 * level * (level - 1);
+export const level = s => levelOf(s.xp);
 export const mult = s => Math.min(2.5, 1 + (s.ladder.lv - 1) * 0.1);
-// the director keeps each quarry near the player's own level: a little faster and tighter after a run of catches
-export function tune(s, quarry) {
-  const d = s.dir[quarry]; if (!d || d.n < 4 || QUARRY[quarry].tier === 0) return { speed: 1, window: 1, cover: 1 };
-  return { speed: clamp(1 + (d.r - 0.7) * 0.3, 0.92, 1.1), window: clamp(1 - (d.r - 0.7) * 0.6, 0.8, 1.25), cover: 1 };
+
+// ---- hunt ----
+// after an outing (sum is hunt-sim's summary): pay, bank the meat, make everyone a little hungrier, move the nests on
+export function finishHunt(s, sum) {
+  const b = active(s), ev = [], before = level(s), coins = Math.round(sum.score * mult(s));
+  s.coins += coins; s.meat += sum.meat; s.xp += sum.score; s.hunts++; s.lesson = 1; if (sum.score > s.best) s.best = sum.score;
+  const S = s.stats; S.hunts++; S.flights += sum.flights; S.catches += sum.caught; for (const k in sum.bag) { S[k] = (S[k] || 0) + sum.bag[k]; s.bag[k] = (s.bag[k] || 0) + sum.bag[k]; }
+  b.rec.f += sum.flights; b.rec.c += sum.caught;
+  for (const x of mine(s)) x.fed = clamp(x.fed - (x.id === b.id ? 0.35 : 0.2), 0, 1);
+  if (level(s) > before) ev.push({ type: 'level', level: level(s) });
+  ev.push(...hatch(s));
+  for (const x of mine(s)) if (age(s, x) === FLY_AGE) ev.push({ type: 'fledged', id: x.id });
+  refreshMarket(s);
+  return { coins, meat: sum.meat, fact: nextFact(s), events: ev };
 }
-// what the player may do at a place today: { ok } or { ok: false, why }
-export function mayGo(s, place) {
-  const b = active(s);
-  if (place === 'majlis') return { ok: true };
-  const why = grounded(s, b); if (why) return { ok: false, why };
-  if (place === 'ground') return { ok: true };
-  if (!s.places[place]) return { ok: false, why: 'locked' };
-  if (seasonOf(s.week) !== 'hunt') return { ok: false, why: 'closed' };
-  if (s.licence !== yearOf(s.week)) return { ok: false, why: 'licence' };
-  return { ok: true };
-}
-// after a flight outing (sum is hunt-sim's summary). kind: 'train' | 'hunt'
-export function finishOuting(s, kind, quarry, sum) {
-  const b = active(s), ev = [], st = potentialOf(b), q = sum.flights ? sum.caught / sum.flights : 0;
-  const base = GAIN[kind] * (0.6 + st.temper / 125) * (0.6 + 0.4 * q), gains = {};
-  const weight = { speed: 1, stamina: 1, burst: 0.7 + 0.6 * (sum.perfect / Math.max(1, sum.flights)), stoop: 0.7 + 0.6 * q, accuracy: 0.7 + 0.6 * (sum.clean / Math.max(1, sum.flights)), agility: 0.8 + 0.1 * Math.min(4, sum.misses) };
-  for (const t of TRAINABLE) { const before = b.tr[t]; b.tr[t] = clamp(before + base * weight[t], 0, 1); gains[t] = b.tr[t] - before; }
-  b.man = clamp(b.man + 0.08, 0, 1); b.xp += sum.flights; b.rec.f += sum.flights; b.rec.c += sum.caught; b.w = clamp(b.w - 0.012, 0.78, 1.15);
-  if (kind === 'hunt' && sum.misses && !statsOf(s, b).flags.feathers) { // a hard miss can break a feather; the hospital mends it
-    const r = stream(s.seed, 'feather', s.ctr.feather = (s.ctr.feather || 0) + 1);
-    if (r() < 0.07 * sum.misses) { b.fe = clamp(b.fe - 0.2, 0, 1); ev.push({ type: 'feather', id: b.id }); }
-  }
-  const coins = Math.round(sum.score * mult(s)); s.coins += coins;
-  const S = s.stats; S.outings++; S.flights += sum.flights; S.catches += sum.caught; S.perfect += sum.perfect; S.clean += sum.clean; S[quarry] = (S[quarry] || 0) + sum.caught; S[kind === 'hunt' ? 'hunts' : 'trains']++;
-  s.bag[quarry] = (s.bag[quarry] || 0) + sum.caught; s.runs++; if (sum.score > s.best) s.best = sum.score;
-  const d = s.dir[quarry] || (s.dir[quarry] = { r: 0.7, n: 0 }); d.r = d.n ? d.r * 0.7 + q * 0.3 : q; d.n++;
-  if (kind === 'train' && s.lesson < LESSON_DONE) { s.lesson = LESSON_DONE; s.places.remah = 1; ev.push({ type: 'lessonDone' }); }
-  const fact = nextFact(s, kind === 'hunt' ? ['law', 'quarry', 'care'] : ['craft', 'care', 'history']);
-  ev.push(...weekTick(s));
-  return { coins, gains, fact, events: ev, trust: b.man };
-}
-// the next fact the player has not seen yet, preferring the given categories; null when the Book is full
-export function nextFact(s, prefer = []) {
-  const open = FACTS.filter(f => !s.facts[f.id]); if (!open.length) return null;
-  const f = open.find(x => prefer.includes(x.cat)) || open[0]; s.facts[f.id] = 1; return f.id;
+export function nextFact(s) { const f = FACTS.find(x => !s.facts[x.id]); if (!f) return null; s.facts[f.id] = 1; return f.id; }
+
+// ---- feed ----
+export function feed(s, id) { const b = bird(s, id); if (!b || b.own !== 'me' || b.fed >= 1 || s.meat < 1) return false; s.meat--; b.fed = clamp(b.fed + 0.5, 0, 1); s.stats.fed++; return true; }
+export function feedAll(s) { let n = 0; for (const b of mine(s).sort((a, c) => a.fed - c.fed)) while (b.fed <= 0.5 && feed(s, b.id)) n++; return n; }
+
+// ---- enhance: training a falcon costs dirhams, and no falcon can be trained past what its genes allow ----
+export const ENHANCE_COST = [100, 250, 500, 900, 1500];
+export function enhance(s, id, stat) {
+  const b = bird(s, id); if (!b || b.own !== 'me' || !STATS.includes(stat)) return { ok: false, why: 'none' };
+  const lv = b.lv[stat], cap = starsOf(b)[stat];
+  if (lv >= cap) return { ok: false, why: 'genes' };
+  if (!canFly(s, b)) return { ok: false, why: 'chick' };
+  if (s.coins < ENHANCE_COST[lv]) return { ok: false, why: 'coins' };
+  s.coins -= ENHANCE_COST[lv]; b.lv[stat]++; s.stats.enhanced++; return { ok: true, level: b.lv[stat] };
 }
 
-// ---- care ----
-export function setRation(s, id, r) { const b = bird(s, id); if (b && b.own === 'me') b.ration = clamp(r | 0, 0, 2); }
-// feeding from the fist builds trust; once a week per bird
-export function feedOnFist(s, id) {
-  const b = bird(s, id); if (!b || b.own !== 'me' || b.fedWeek === s.week || s.food < 0.3) return false;
-  s.food = Math.round((s.food - 0.3) * 10) / 10; b.fedWeek = s.week; b.man = clamp(b.man + 0.05, 0, 1); b.w = clamp(b.w + 0.01, 0.78, 1.15); s.stats.fed++; return true;
+// ---- sell ----
+const COLOUR_PRICE = { adham: 0.9, ahmar: 1, ramadi: 1, akhdar: 1.1, ashgar: 1.5, fiddi: 1.6, abyad: 3 };
+// what a genome is worth: better stars, a rarer colour and rare genes all raise it
+export function worth(g, F = 0, lv = null) {
+  const p = potential(g, F), st = [p.speed, p.stamina, (p.stoop + p.burst + p.accuracy) / 3, p.agility, p.eyes].reduce((a, v) => a + stars(v), 0);
+  let rare = 0; RARE.forEach((r, i) => { rare += shows(g, i) === 1 ? 0.6 : copies(g, i) ? 0.2 : 0; });
+  const trained = lv ? STATS.reduce((a, k) => a + lv[k], 0) : 0;
+  return Math.round(60 * Math.pow(1.2, st - 5) * COLOUR_PRICE[colourOf(g)] * (1 + rare) * (1 + 0.05 * trained) / 10) * 10;
+}
+export const price = (s, b) => Math.round(worth(genomeOf(b), b.F, b.lv) * (age(s, b) < FLY_AGE ? 0.5 : 1) / 10) * 10;
+// does this falcon fill a buyer's request? → the index of the order, or -1
+export function matches(s, b, o) {
+  const g = genomeOf(b), st = starsOf(b);
+  return o.want === 'colour' ? colourOf(g) === o.v : o.want === 'stat' ? st[o.stat] >= o.min : o.want === 'sex' ? b.sex === o.v : o.want === 'rare' ? shows(g, o.v) === 1 : false;
+}
+export const orderFor = (s, b) => s.market.orders.findIndex(o => matches(s, b, o));
+export function maySell(s, b) { return !b || b.own !== 'me' ? 'none' : nesting(s, b.id) ? 'nest' : mine(s).filter(x => x.id !== b.id && canFly(s, x)).length < 1 ? 'last' : null; }
+export function sell(s, id) {
+  const b = bird(s, id), why = maySell(s, b); if (why) return { ok: false, why };
+  const oi = orderFor(s, b), bonus = oi >= 0 ? s.market.orders[oi].bonus : 1, got = Math.round(price(s, b) * bonus);
+  s.coins += got; s.birds = s.birds.filter(x => x.id !== id); s.stats.sold++;
+  if (oi >= 0) { s.market.orders.splice(oi, 1); s.stats.orders++; }
+  if (s.active === id) s.active = mine(s).find(x => canFly(s, x)).id;
+  return { ok: true, coins: got, order: oi >= 0 };
 }
 
-// ---- the shop: in-game dirhams only ----
-export const SHOP = [
-  { id: 'food', price: 20, group: 'food' }, { id: 'food10', price: 180, group: 'food' },
-  { id: 'licence', price: LICENCE_FEE, group: 'papers' },
-  { id: 'scale', price: 200, group: 'gear', once: 'scale' }, { id: 'perch', price: 400, group: 'gear', once: 'perch' },
-  { id: 'hood_gold', price: 150, group: 'hood' }, { id: 'hood_teal', price: 150, group: 'hood' }, { id: 'hood_green', price: 150, group: 'hood' },
-  { id: 'imping', price: 80, group: 'hospital' }, { id: 'checkup', price: 100, group: 'hospital' }, { id: 'dna', price: 300, group: 'hospital' },
-];
-export const HOODS = { red: '#c8202b', hood_gold: '#e0a72a', hood_teal: '#1f7a74', hood_green: '#119a4b' };
-export function owned(s, it) { return it.once ? !!s.gear[it.once] : it.group === 'hood' ? s.owned.includes(it.id) : it.id === 'licence' ? s.licence === yearOf(s.week) : false; }
-export function buy(s, id) {
-  const it = SHOP.find(x => x.id === id), b = active(s); if (!it) return { ok: false, why: 'none' };
-  if (owned(s, it)) { if (it.group === 'hood') { s.gear.hood = id; return { ok: true, worn: true }; } return { ok: false, why: 'owned' }; }
-  if (id === 'imping' && b.fe >= 1) return { ok: false, why: 'fine' };
-  if (id === 'checkup' && b.hp >= 1) return { ok: false, why: 'fine' };
-  if (id === 'dna' && s.seen['dna' + b.id]) return { ok: false, why: 'owned' };
-  if (s.coins < it.price) return { ok: false, why: 'coins' };
-  s.coins -= it.price;
-  if (id === 'food') s.food += 1; else if (id === 'food10') s.food += 10; else if (id === 'licence') s.licence = yearOf(s.week);
-  else if (it.once) s.gear[it.once] = 1; else if (it.group === 'hood') { s.owned.push(id); s.gear.hood = id; }
-  else if (id === 'imping') b.fe = 1; else if (id === 'checkup') b.hp = 1; else if (id === 'dna') s.seen['dna' + b.id] = 1;
-  return { ok: true };
+// ---- the market: three falcons for sale and three buyers' requests, changed every third hunt ----
+const ORDER_KINDS = [{ want: 'colour', v: 'ashgar' }, { want: 'colour', v: 'akhdar' }, { want: 'colour', v: 'ahmar' }, { want: 'sex', v: 'f' }, { want: 'sex', v: 'm' }, { want: 'stat', stat: 'speed', min: 3 }, { want: 'stat', stat: 'stamina', min: 3 },
+  { want: 'stat', stat: 'stoop', min: 3 }, { want: 'stat', stat: 'eyes', min: 3 }, { want: 'stat', stat: 'speed', min: 4 }, { want: 'rare', v: 'barq' }, { want: 'colour', v: 'abyad' }];
+export function refreshMarket(s, force) {
+  if (!force && s.hunts - s.market.stamp < 3 && s.market.offers.length + s.market.orders.length > 0) return false;
+  const r = stream(s.seed, 'market', s.ctr.market = (s.ctr.market || 0) + 1), lvl = level(s), src = lvl >= 6 ? 'auction' : lvl >= 3 ? 'good' : 'common';
+  s.market.offers = [0, 1, 2].map(i => { const g = founder(r, { species: 'saker', source: i === 2 ? src : 'common', rareFreq: lvl >= 4 ? { barq: 0.15, sahm: 0.12, ain: 0.1 } : { barq: 0.08 } }); return { g: pack(g), price: Math.round(worth(g) * 1.6 / 10) * 10 }; });
+  const pool = ORDER_KINDS.slice(0, lvl >= 3 ? ORDER_KINDS.length : 9), orders = [];
+  while (orders.length < 3) { const o = pool.splice(int(r, pool.length), 1)[0]; orders.push(Object.assign({ bonus: o.want === 'rare' || o.v === 'abyad' ? 2 : o.min === 4 ? 1.8 : 1.5 }, o)); }
+  s.market.orders = orders; s.market.stamp = s.hunts; return true;
 }
+export function buyFalcon(s, i) {
+  const o = s.market.offers[i]; if (!o) return { ok: false, why: 'none' };
+  if (mine(s).length >= s.mewsCap) return { ok: false, why: 'full' };
+  if (s.coins < o.price) return { ok: false, why: 'coins' };
+  s.coins -= o.price; s.market.offers.splice(i, 1); s.stats.bought++; return { ok: true, bird: addBird(s, unpack(o.g), { born: s.hunts - 8 }) };
+}
+export const MEAT_PRICE = 20, MEWS_PRICE = [800, 2000, 5000, 12000], NEST_PRICE = [3000, 9000];
+export function buyMeat(s, n = 1) { const cost = n >= 5 ? Math.round(MEAT_PRICE * n * 0.9) : MEAT_PRICE * n; if (s.coins < cost) return { ok: false, why: 'coins' }; s.coins -= cost; s.meat += n; return { ok: true }; }
+export const mewsCost = s => MEWS_PRICE[(s.mewsCap - 4) / 2] ?? null;
+export const nestCost = s => NEST_PRICE[s.nestCap - 1] ?? null;
+export function buyMews(s) { const c = mewsCost(s); if (c == null) return { ok: false, why: 'max' }; if (s.coins < c) return { ok: false, why: 'coins' }; s.coins -= c; s.mewsCap += 2; return { ok: true }; }
+export function buyNest(s) { const c = nestCost(s); if (c == null) return { ok: false, why: 'max' }; if (s.coins < c) return { ok: false, why: 'coins' }; s.coins -= c; s.nestCap++; return { ok: true }; }
 
-// ---- breeding ----
-// who may be paired this spring: hens and tiercels old enough, mine or Baba's
-export function pairable(s) {
-  const ok = b => isAdult(s, b) && !b.guest;
-  return { dams: s.birds.filter(b => b.sex === 'f' && ok(b)), sires: s.birds.filter(b => b.sex === 'm' && ok(b)) };
+// ---- breed ----
+// who may be paired: my grown hens that are not on a nest, and any grown tiercel, mine or Baba's
+export function pairable(s) { return { dams: mine(s).filter(b => b.sex === 'f' && isAdult(s, b) && !nesting(s, b.id)), sires: s.birds.filter(b => b.sex === 'm' && isAdult(s, b)) }; }
+export function mayPair(s, sire, dam) { return s.nests.length >= s.nestCap ? 'busy' : !sire || !dam || sire.sex !== 'm' || dam.sex !== 'f' || !isAdult(s, sire) || !isAdult(s, dam) || dam.own !== 'me' ? 'pair' : nesting(s, dam.id) ? 'nest' : dam.fed < HUNGRY ? 'hungry' : null; }
+export function pair(s, sireId, damId) {
+  const sire = bird(s, sireId), dam = bird(s, damId), why = mayPair(s, sire, dam); if (why) return { ok: false, why };
+  const F = coi(pedMap(s), sire.id, dam.id), rng = stream(s.seed, 'breed', s.ctr.breed = (s.ctr.breed || 0) + 1);
+  const eggs = layClutch(genomeOf(sire), genomeOf(dam), rng, { fert: 0.75, F, min: 1 }).filter(e => e.fertile).slice(0, 4).map(e => pack(e.g));
+  s.nests.push({ sire: sire.id, dam: dam.id, F, laid: s.hunts, hatch: s.hunts + 2, eggs }); return { ok: true, n: eggs.length };
 }
-export function mayPair(s) { return s.clutch ? 'busy' : seasonOf(s.week) !== 'breed' ? 'season' : null; }
-export function startClutch(s, sireId, damId) {
-  const why = mayPair(s), sire = bird(s, sireId), dam = bird(s, damId);
-  if (why || !sire || !dam || sire.sex !== 'm' || dam.sex !== 'f' || !isAdult(s, sire) || !isAdult(s, dam)) return { ok: false, why: why || 'pair' };
-  const F = coi(pedMap(s), sire.id, dam.id), first = !s.stats.chicks && !s.seen.clutch1, baba = dam.own === 'baba';
-  const rng = stream(s.seed, 'breed', s.ctr.breed = (s.ctr.breed || 0) + 1);
-  const eggs = layClutch(genomeOf(sire), genomeOf(dam), rng, { fert: FERTILITY.natural, F, min: first ? 2 : 0 }).map(e => (e.fertile ? { fertile: true, g: pack(e.g), mut: e.mut || null } : { fertile: false }));
-  s.clutch = { sire: sire.id, dam: dam.id, F, laid: s.week, hatch: s.week + 5, fledge: s.week + 12, stage: 'eggs', baba, eggs, candled: 0 };
-  s.seen.clutch1 = 1; return { ok: true, n: eggs.length };
+// eggs that are due hatch, and the chicks join the mews as far as there is room (the rest wait in the nest)
+export function hatch(s) {
+  const ev = [];
+  for (const n of s.nests) { if (s.hunts < n.hatch) continue; let k = 0;
+    while (n.eggs.length && mine(s).length < s.mewsCap) { addBird(s, unpack(n.eggs.shift()), { born: s.hunts, s: n.sire, d: n.dam, F: n.F }); s.stats.chicks++; k++; }
+    if (k) ev.push({ type: 'hatch', n: k }); else if (n.eggs.length && !n.told) { n.told = 1; ev.push({ type: 'full' }); } }
+  s.nests = s.nests.filter(n => n.eggs.length); return ev;
 }
-// the fledged chicks at the given indexes join the mews (as many as there is room for); the clutch is then over
-export function keepChicks(s, idx) {
-  const c = s.clutch; if (!c || c.stage !== 'fledged') return [];
-  const kept = [];
-  for (const i of idx) { const e = c.eggs[i]; if (!e || mine(s).length >= s.mews.cap) continue; kept.push(addBird(s, unpack(e.g), { born: c.hatch, s: c.sire, d: c.dam, F: c.F, man: 0.5, tr: 0.2 })); s.stats.chicks++; }
-  s.clutch = null; return kept;
-}
+export { typeOf };

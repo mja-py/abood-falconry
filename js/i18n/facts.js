@@ -1,6 +1,5 @@
-// The words of every fact card and of Baba's majlis questions, Arabic first. Each fact_<id> has a row with its source
-// in content/facts-ledger.json; say only what that source says. q_<id> is the question, q_<id>_o its three answers
-// (the index of the right one is in js/data/facts.js).
+// The words of every fact card, Arabic first. One is shown after each hunt. Each fact_<id> has a row with its source in
+// content/facts-ledger.json; say only what that source says.
 export const FACTS_AR = {
   fact_hood_calm: 'البرقع أهم أدوات الصقّار: يغطّي عيون الصقر فيهدا ويرتاح.',
   fact_drones: 'اليوم الصقّارين في الإمارات يدرّبون الصقور بالدرون، تشيل التلواح وتطير به. قبل كانوا يعلّقونه في طيّارة ورق أو بالون.',
@@ -41,25 +40,6 @@ export const FACTS_AR = {
   fact_clutch: 'صقر الجير يبيض من بيضة لين خمس، ويحضنها من 34 لين 36 يوم.',
   fact_second_clutch: 'إذا انشالت البيضات الأولى للحضّانة، الصقر ممكن يبيض مرة ثانية.',
   fact_record_white: 'صقر جير أبيض نادر انباع بـ 2.1 مليون درهم في مزاد في أبوظبي، والمنظمين قالوا إنه أغلى صقر انباع في مزاد.',
-
-  q_hood_calm: 'ليش نلبّس الصقر البرقع؟', q_hood_calm_o: ['عشان يهدا ويرتاح', 'عشان يطير أسرع', 'عشان ما يبرد'],
-  q_season: 'متى يبدا موسم القنص في أبوظبي 2026-2027؟', q_season_o: ['1 يناير', '20 أكتوبر', '15 فبراير'],
-  q_licence: 'كم رخصة القنص بالصقور في أبوظبي للموسم؟', q_licence_o: ['20 درهم', '7,000 درهم', '127 درهم'],
-  q_unesco_2010: 'متى انسجلت الصقارة في اليونسكو؟', q_unesco_2010_o: ['2010', '1976', '2002'],
-  q_conf_1976: 'وين كان أول مؤتمر دولي للصقارة سنة 1976؟', q_conf_1976_o: ['دبي', 'أبوظبي', 'العين'],
-  q_release_1995: 'برنامج الشيخ زايد لإطلاق الصقور، شو يسوي؟', q_release_1995_o: ['يبيع الصقور', 'يسابق الصقور', 'يرجّع الصقور للبرية'],
-  q_passport_2002: 'ليش الإمارات سوّت جواز سفر للصقر؟', q_passport_2002_o: ['عشان توقّف التهريب', 'عشان الصقر يسوق', 'عشان يدخل المدرسة'],
-  q_race_400: 'كم متر يتسابق الصقر في بطولة فزاع؟', q_race_400_o: ['100 متر', '400 متر', '4 كيلومتر'],
-  q_race_ages: 'شو يسمّون صقر السباق اللي عمره أقل من سنة؟', q_race_ages_o: ['فرخ', 'جرناس', 'وكر'],
-  q_tiercel: 'منو الأكبر في الشاهين؟', q_tiercel_o: ['الذكر', 'نفس الحجم', 'الأنثى'],
-  q_captive_houbara: 'أي حبارى يقنصها الصقّار المرخّص؟', q_captive_houbara_o: ['أي حبارى في البر', 'حبارى من مراكز الإكثار بس', 'ما يقنص حبارى أبداً'],
-  q_drones: 'شو يشيل التلواح في التدريب اليوم؟', q_drones_o: ['الدرون', 'السيارة', 'الجمل'],
-  q_saluki: 'شو شغل السلوقي في القنص؟', q_saluki_o: ['يشيل الصقر', 'يحرس الخيمة', 'يطلّع الطريدة للصقر'],
-  q_clutch: 'كم يوم يحضن الجير بيضه؟', q_clutch_o: ['7 أيام', '34 لين 36 يوم', '100 يوم'],
-  q_hybrids_hardy: 'منو ينصاب بالرشاشيات أكثر حسب دراسة 2024؟', q_hybrids_hardy_o: ['الجير الصافي', 'هجين الجير', 'نفس الشي'],
-  q_marzoom: 'بشو يكون القنص في محمية المرزوم؟', q_marzoom_o: ['بالبندقية', 'بالشبك', 'بالصقور والسلق بس'],
-  q_bedouin_release: 'في الماضي، شو كان الصقّار يسوي بالصقر قبل الصيف؟', q_bedouin_release_o: ['يبيعه', 'يطلقه', 'يسافر به'],
-  q_wakr: 'شو اسم المكان اللي يوقف عليه الصقر؟', q_wakr_o: ['الوكر', 'البرقع', 'المنقلة'],
 };
 export const FACTS_EN = {
   fact_hood_calm: "The hood, the burqa, is the falconer's main tool: it covers the falcon's eyes so it stays calm.",
@@ -101,23 +81,4 @@ export const FACTS_EN = {
   fact_clutch: 'A gyrfalcon lays from one to five eggs and sits on them for 34 to 36 days.',
   fact_second_clutch: 'If the first eggs are moved to an incubator, the falcon may lay a second time.',
   fact_record_white: 'A rare white gyrfalcon sold for AED 2.1 million at an auction in Abu Dhabi. The organisers said it was the highest price ever paid for a falcon at auction.',
-
-  q_hood_calm: 'Why does a falcon wear a hood?', q_hood_calm_o: ['To keep it calm', 'To make it fly faster', 'To keep it warm'],
-  q_season: "When does Abu Dhabi's 2026–27 falconry season begin?", q_season_o: ['1 January', '20 October', '15 February'],
-  q_licence: 'What does a falconry licence cost for the season in Abu Dhabi?', q_licence_o: ['AED 20', 'AED 7,000', 'AED 127'],
-  q_unesco_2010: 'When did falconry join the UNESCO list?', q_unesco_2010_o: ['2010', '1976', '2002'],
-  q_conf_1976: 'Where was the first international falconry conference held in 1976?', q_conf_1976_o: ['Dubai', 'Abu Dhabi', 'Al Ain'],
-  q_release_1995: 'What does the Sheikh Zayed Falcon Release Programme do?', q_release_1995_o: ['Sells falcons', 'Races falcons', 'Returns falcons to the wild'],
-  q_passport_2002: 'Why did the UAE give falcons passports?', q_passport_2002_o: ['To stop smuggling', 'So falcons can drive', 'So falcons can go to school'],
-  q_race_400: 'How far does a falcon race in the Fazza championship?', q_race_400_o: ['100 metres', '400 metres', '4 kilometres'],
-  q_race_ages: 'What is a racing falcon under one year old called?', q_race_ages_o: ['Farkh', 'Jirnas', 'Wakr'],
-  q_tiercel: 'Which peregrine is bigger?', q_tiercel_o: ['The male', 'They are the same', 'The female'],
-  q_captive_houbara: 'Which houbara may a licensed falconer hunt?', q_captive_houbara_o: ['Any houbara in the wild', 'Only houbara from breeding centres', 'No houbara at all'],
-  q_drones: 'What carries the lure in training today?', q_drones_o: ['A drone', 'A car', 'A camel'],
-  q_saluki: "What is the saluki's job on a hunt?", q_saluki_o: ['Carrying the falcon', 'Guarding the tent', 'Flushing the quarry for the falcon'],
-  q_clutch: 'How long does a gyrfalcon sit on its eggs?', q_clutch_o: ['7 days', '34 to 36 days', '100 days'],
-  q_hybrids_hardy: 'Which caught aspergillosis more often in the 2024 study?', q_hybrids_hardy_o: ['Pure gyrfalcons', 'Gyr hybrids', 'Both the same'],
-  q_marzoom: 'How do people hunt in Al Marzoom reserve?', q_marzoom_o: ['With guns', 'With nets', 'With falcons and salukis only'],
-  q_bedouin_release: 'In the past, what did a falconer do with the falcon before summer?', q_bedouin_release_o: ['Sell it', 'Set it free', 'Travel with it'],
-  q_wakr: "What is the falcon's perch called?", q_wakr_o: ['The wakr', 'The burqa', 'The mangalah'],
 };

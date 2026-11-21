@@ -106,3 +106,35 @@ export function placeArt(cv, kind) {
   else { c.translate(60, 60); shrub(c, 0.6); }
   c.restore();
 }
+
+// the houbara bustard, the falconer's great quarry: sandy and speckled, a long neck with a dark stripe, long legs.
+// On the ground it walks or runs (ph is the stride); `fly` spreads its black-and-white wings.
+export function houbara(c, x, y, ph = 0, fly = false, s = 1) {
+  c.save(); c.translate(x, y); c.scale(s, s); ink(c, 1.4); c.lineJoin = 'round'; c.lineCap = 'round'; const st = Math.sin(ph);
+  if (!fly) { c.strokeStyle = INK; c.lineWidth = 2.6; c.beginPath(); c.moveTo(-3, -11); c.lineTo(-5 - st * 6, 0); c.moveTo(3, -11); c.lineTo(5 + st * 6, 0); c.stroke(); c.strokeStyle = '#c9a46c'; c.lineWidth = 1.2; c.stroke(); ink(c, 1.4); }
+  const by = fly ? -10 : -17;
+  c.fillStyle = '#d6b27a'; c.beginPath(); c.moveTo(-13, by + 1); c.lineTo(-25, by - 2); c.lineTo(-24, by + 4); c.closePath(); fs(c);                                   // tail
+  c.beginPath(); c.ellipse(0, by, 15, 8.5, -0.08, 0, TAU); fs(c);                                                                                                // body
+  c.fillStyle = '#8a6a3a'; for (const [dx, dy] of [[-6, -3], [0, -4], [5, -2], [-2, 1], [-9, 1], [7, 2]]) { c.beginPath(); c.ellipse(dx, by + dy, 1.6, 1, 0.3, 0, TAU); c.fill(); }
+  c.fillStyle = '#efe2c4'; c.beginPath(); c.ellipse(1, by + 5, 10, 3.2, 0, 0, Math.PI); c.fill();                                                                 // pale belly
+  c.strokeStyle = INK; c.lineWidth = 6.2; c.beginPath(); c.moveTo(11, by - 3); c.quadraticCurveTo(17, by - 13, 15, by - 22); c.stroke();                           // neck
+  c.strokeStyle = '#e6d3ac'; c.lineWidth = 4; c.stroke(); c.strokeStyle = '#2a2018'; c.lineWidth = 1.4; c.beginPath(); c.moveTo(12.5, by - 5); c.quadraticCurveTo(18, by - 13, 16.6, by - 20); c.stroke();
+  ink(c, 1.3); c.fillStyle = '#d6b27a'; c.beginPath(); c.arc(15.5, by - 24, 4.4, 0, TAU); fs(c);                                                                   // head
+  c.fillStyle = '#6b5a3a'; c.beginPath(); c.moveTo(19, by - 25); c.lineTo(25, by - 23.5); c.lineTo(19, by - 22.5); c.closePath(); fs(c);
+  c.fillStyle = '#1a1210'; c.beginPath(); c.arc(17, by - 25, 1.1, 0, TAU); c.fill();
+  if (fly) { const f = Math.cos(ph); c.save(); c.translate(0, by - 4); c.scale(1, (f < 0 ? -1 : 1) * Math.max(0.2, Math.abs(f)));
+    c.fillStyle = '#fffaf0'; c.beginPath(); c.moveTo(-8, 0); c.quadraticCurveTo(-12, -18, -18, -32); c.quadraticCurveTo(0, -20, 8, 0); c.closePath(); fs(c);
+    c.fillStyle = '#1a1210'; c.beginPath(); c.moveTo(-13.5, -22); c.lineTo(-18, -32); c.quadraticCurveTo(-8, -26, -4, -19); c.closePath(); c.fill(); c.restore(); }
+  c.restore();
+}
+// the date palm at the camp
+export function palm(c) {
+  ink(c); c.fillStyle = '#9a6a3c'; c.beginPath(); c.moveTo(-5, 0); c.quadraticCurveTo(-1, -40, 3, -72); c.lineTo(9, -72); c.quadraticCurveTo(6, -40, 6, 0); c.closePath(); fs(c);
+  c.strokeStyle = 'rgba(43,26,18,.45)'; c.lineWidth = 1.1; for (let i = 1; i < 8; i++) { c.beginPath(); c.moveTo(-4 + i * 0.9, -i * 9); c.lineTo(6 + i * 0.3, -i * 9 - 3); c.stroke(); }
+  ink(c, 1.5);
+  for (const [a, l, col] of [[-3.5, 30, '#3c9a58'], [0.35, 30, '#2f7d4a'], [-2.95, 40, '#2f7d4a'], [-0.2, 40, '#3c9a58'], [-2.4, 44, '#3c9a58'], [-0.75, 44, '#2f7d4a'], [-1.9, 40, '#2f7d4a'], [-1.25, 40, '#3c9a58']]) {
+    const ex = 6 + Math.cos(a) * l, ey = -74 + Math.sin(a) * l * 0.8 + 14, mx = 6 + Math.cos(a) * l * 0.5, my = -74 + Math.sin(a) * l * 0.9 - 6;
+    c.fillStyle = col; c.beginPath(); c.moveTo(6, -75); c.quadraticCurveTo(mx, my - 8, ex, ey); c.quadraticCurveTo(mx, my + 5, 6, -71); c.closePath(); fs(c);
+  }
+  c.fillStyle = '#c9772b'; c.beginPath(); c.ellipse(1, -64, 4, 6, 0.3, 0, TAU); fs(c); c.beginPath(); c.ellipse(11, -63, 3.5, 5.5, -0.3, 0, TAU); fs(c);
+}

@@ -41,7 +41,6 @@ export function resetSave() { S = fresh(newSeed()); save(); }
 export const bytes = () => { let n = 0; for (const k of [KEY, KEY + '.prev', KEY + '.bak', KEY + '.before-import']) { const v = store.get(k); if (v) n += v.length; } return n; };
 const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 export const today = () => ymd(new Date());
-const yesterday = () => { const y = new Date(); y.setDate(y.getDate() - 1); return ymd(y); };
 
 // backup and restore: the whole save as text
 export function backup() { S.lastBackup = S.playSec; save(); return exportSave(S); }
@@ -75,8 +74,3 @@ export const setMuted = b => { try { localStorage.setItem('abood-muted', b ? '1'
 // one-off flags (story shown, a card seen …)
 export const seen = k => !!S.seen[k];
 export function markSeen(k) { S.seen[k] = 1; save(); }
-
-// the calendar-day staples
-export const dailyList = () => M.dailyList(S, today());
-export const loginDay = () => M.loginDay(S, today(), yesterday());
-export function claimLogin() { const n = M.claimLogin(S, today(), yesterday()); if (n) save(); return n; }

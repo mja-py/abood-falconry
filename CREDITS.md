@@ -3,7 +3,8 @@
 ## Game art
 
 All characters, falcons, scenery, items and the app icons are drawn in code in `js/art.js` and `js/art/`. There are no
-third-party images. The tent, the camp fire and the ghaf tree are adapted from *Abood in Liwa* by the same author.
+third-party images. The tent, the camp fire, the ghaf tree, the 4x4 truck, the shaded dune ground and the drag-pad steering are adapted
+from *Abood in Liwa* by the same author.
 Abood, Mozah, Baba, Nabeeh and Usta first appeared in *Run, Abood!* and *Abood Space* by the same author.
 
 ## Font

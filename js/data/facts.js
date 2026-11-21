@@ -14,11 +14,4 @@ export const FACTS = [
   { id: 'saker_pref', cat: 'birds' }, { id: 'tiercel', cat: 'birds' }, { id: 'race_400', cat: 'birds' }, { id: 'race_ages', cat: 'birds' },
   { id: 'spring_light', cat: 'birds' }, { id: 'clutch', cat: 'birds' }, { id: 'second_clutch', cat: 'birds' }, { id: 'record_white', cat: 'birds' },
 ];
-// Baba's majlis questions: each tests one fact; `right` is the index of the correct option in q_<id>_o
-export const QUIZ = [
-  { id: 'hood_calm', right: 0 }, { id: 'season', right: 1 }, { id: 'licence', right: 2 }, { id: 'unesco_2010', right: 0 }, { id: 'conf_1976', right: 1 },
-  { id: 'release_1995', right: 2 }, { id: 'passport_2002', right: 0 }, { id: 'race_400', right: 1 }, { id: 'race_ages', right: 0 }, { id: 'tiercel', right: 2 },
-  { id: 'captive_houbara', right: 1 }, { id: 'drones', right: 0 }, { id: 'saluki', right: 2 }, { id: 'clutch', right: 1 }, { id: 'hybrids_hardy', right: 0 },
-  { id: 'marzoom', right: 2 }, { id: 'bedouin_release', right: 1 }, { id: 'wakr', right: 0 },
-];
 export const FACT_IDS = FACTS.map(f => f.id);
